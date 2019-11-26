@@ -4,61 +4,7 @@
 
 //此电梯的基本功能：
 
-#include <iostream>
-#include <iomanip> //io代表输入输出，manip是manipulator（操纵器）的缩写
-				   //例如：setw(n)
-#include <list>
-#pragma comment(lib, "winmm.lib")//lib是一个预定义的标识符，指定注释的类型，
-//除了lib以外，还有compiler, exestr, linker这仨个
-//"winmm.lib"是一个为lib提供附加信息的字符串
-//winnmm.dll是windows多媒体相关应用程序接口，用于低档的音频和游戏手柄
-
-//首先定义电梯的最大负载范围
-#define MIN_MAXLOAD 5
-#define MAX_MAXLOAD 20
-
-//然后定义楼层数
-#define MIN_FLOOR_NUMS 2 //为什么楼层数不定义为1呢？
-					     //我们后面再说
-#define MAX_FLOOR_NUMS 40
-
-//接着定义电梯的数量 
-#define MIN_LIFT_NUMS 1
-#define MAX_LIFT_NUMS 13
-
-//因为我们会用到泊松分布，所以要定义泊松参数的范围
-#define MIN_LAMBDA 0.1
-#define MAX_LAMBDA 20
-
-//安排一些特殊情况
-//例如新出现的乘客人数最大值(100人)，单位为s
-#define MAX_NEW_PASSENGER 100
-
-//还有安排我们此次模拟所要用到的最长时间,400s(这里的时间指的是电梯模拟器的虚拟时间，并不是现实时间，
-//二者什么区别？我们后面再说)
-#define MAX_PASSTIME 400
-
-//接下来我们定义一下不同状态时候的颜色
-#define NORMAL 0
-#define INFO 1
-#define BLANK 2
-#define DOWN 3
-#define UP 4
-#define OPEN 5
-#define BUTTON 6
-#define TABLE 7
-
-//最后定义一下演示窗口的大小
-#define SCREEN_WIDTH 168 //屏幕宽度
-#define SCREEN_HEIGHT 57 //屏幕高度
-#define WINDOW_WIDTH 167 //窗口宽度
-#define WINDOW_HEIGHT 43 //窗口高度
-
-//记着定义一下时间，虚拟的还是现实的呢？
-//虚拟的吧
-#define SECONDS_PER_HOUR 3600.0
-
-using namespace std;
+#include "Lift_Simulator.h"
 
 //----接下来我们定义一系列子函数
 double maximum(double, double);
@@ -94,7 +40,79 @@ void _clear_Screen(int, int, int, double);//在每次演示前清屏，参数依
 										  //楼层总数、电梯总数、电梯最大负载、泊松参数λ
 
 
+//定义完函数后，我们要定义一些class
+class PASSENGER
+{
+public:
+	int _from_which_floor;//乘客在哪层楼出现
+	int _to_which_floor;//乘客的目的楼层
+	int _ppl_appear_time;//乘客出现的时间
+	int _in_lift_time;//乘客进电梯的时间
+	int _out_lift_time;//乘客出电梯的时间
 
+	//ctor
+	PASSENGER(const int f, const int t, const int a)//定义成const int的含义我们后面解释
+	{
+		_from_which_floor = f;
+		_to_which_floor = t;
+		_ppl_appear_time = a;//init各种参数
+
+		_in_lift_time = _out_lift_time = 0;
+	}
+
+	//初始化
+	void init()
+	{
+		_in_lift_time = _out_lift_time = 0;//为什么要把这个初始化时间多写一遍呢？
+	}
+};
+
+class FLOOR
+{
+	//对楼层进行初始化
+	list<int> _num_ppl_wait;//该变量记录在该楼层FLOOR等待的乘客的序号
+	
+	void init()
+	{
+		_num_ppl_wait.clear();//人进人出，不断地更新这个序号值
+	}
+};
+
+class LIFT
+{
+public:
+	bool _stop_which_Floor[MAX_FLOOR_NUMS + 1];//该变量表示电梯是否需要在某层楼停下
+	int _current_Floor;
+	int _target_Floor;
+	int _former_Floor;//表示电梯之前所在的楼层
+
+	list<int> _num_in_Lift; //表示该电梯内乘客的序号
+
+	LIFT()
+	{
+		_target_Floor = _former_Floor = 0;
+		
+		for (int i = 1; i <= MAX_FLOOR_NUMS; i++)//电梯需要从1楼开始上，起码有2楼
+		{
+			_stop_which_Floor[i] = 0;//先初始化成0，表示不在该楼层停
+		}
+	}
+
+	void init()
+	{
+		//为什么每个class中都要用一个init函数？
+		_num_in_Lift.clear();
+		_target_Floor = _former_Floor = 0;//而且target的这些初始化在这个init中还要重新写一次
+
+		for (int j = 1; j <= MAX_FLOOR_NUMS; j++)
+		{
+			_stop_which_Floor[j] = 0;//意义同上
+		}
+	}
+};
+
+HANDLE hOut;//这个需要windows.h
+			//输出句柄
 
 
 
